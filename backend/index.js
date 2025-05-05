@@ -13,6 +13,12 @@ app.use(cors({
   credentials: true
 }))
 
+
+console.log(process.env.FIREBASE_PROJECT_ID);
+console.log(process.env.FIREBASE_PRIVATE_KEY);
+console.log(process.env.FIREBASE_CLIENT_EMAIL);
+
+
 const bookRoutes = require("./src/books/book.route")
 const borrowRoutes  = require("./src/borrow/borrow.route");
 const userRoutes = require("./src/users/user.route")
