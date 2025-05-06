@@ -16,12 +16,12 @@ const Register = () => {
   const onSubmit = async (data) => {
     console.log(data);
     try {
-      await registerUser(data.email, data.password);
+      await registerUser(data.username, data.email, data.password);
       alert("User Registered Successfully");
       // Optionally, reset form or redirect user.
     } catch (error) {
       console.error("Registration error: ", error);
-      setMessage("Please Provide Valid Credentials");
+      setMessage(error.message || "Please Provide Valid Credentials");
     }
   };
 
@@ -29,18 +29,28 @@ const Register = () => {
     <div className='h-[calc(100vh-120px)] flex justify-center items-center'>
       <div className='w-full max-w-sm mx-auto bg-white p-6 shadow-md rounded px-8 pt-6 pb-8 mb-4'>
         <h2 className='text-2xl font-bold mb-4 text-center'>Register Here</h2>
-
         <form onSubmit={handleSubmit(onSubmit)}>
+          <div className='mb-4'> 
+            <label htmlFor='username' className="block text-gray-500 text-sm font-bold mb-2">Username</label>
+            <input 
+              {...register("username", { required: true })}
+              type="text" 
+              id="username" 
+              placeholder='Username'
+              className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' 
+            />
+            {errors.username && <p className="text-red-500 text-sm mt-1">Username is required</p>}
+          </div>
           <div className='mb-4'> 
             <label htmlFor='email' className="block text-gray-500 text-sm font-bold mb-2">Email</label>
             <input 
-              {...register("email", { required: true })}
+              {...register("email", { required: true, pattern: /^\S+@\S+$/i })}
               type="email" 
               id="email" 
               placeholder='Email Address'
               className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' 
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">Email is required</p>}
+            {errors.email && <p className="text-red-500 text-sm mt-1">Valid email is required</p>}
           </div>
           
           <div className='mb-4'> 

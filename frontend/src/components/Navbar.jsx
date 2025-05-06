@@ -4,25 +4,21 @@ import { HiMiniBars3CenterLeft } from "react-icons/hi2"
 import { IoSearchCircle } from "react-icons/io5"
 import { HiOutlineUser } from "react-icons/hi"
 import { HiOutlineHeart } from "react-icons/hi"
-import { HiShoppingCart } from "react-icons/hi"
 import avatarImg from "../assets/avatar.png"
 import Login from './Login'
 import Register from './Register'
-import { useSelector } from 'react-redux'
 import { useAuth } from '../context/AuthContext'
 
 const navigation = [
   {name: "Dashboard", href:"/user-dashboard"},
+  {name: "Borrow Books", href:"/borrow"},
+  {name: "Borrowed Books", href:"/borrowed-books"},
   {name: "Orders", href:"Orders"},
   {name: "Cart Page", href:"/Cart"},
   {name: "CheckOut", href:"/CheckOut"}
 ]
 
 const Navbar  = () => {
-
-  const cartItems = useSelector(state => state.cart.cartItems);
-  
-
 
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   console.log(isDropdownOpen)
@@ -98,16 +94,7 @@ const Navbar  = () => {
                 <button className='hidden sm:block'>
                 <HiOutlineHeart  className='size-6'/>
                 </button>
-                <Link to="/cart" className='bg-[#FFCE1A] p-1 sm:px-6 py-2 flex items-center rounded-sm'>
-                    <HiShoppingCart className=''/>
-
-                    {
-                      cartItems.length > 0 ?
-                       <span className='text-sm font-semibold sm:ml-2'>{cartItems.length}</span>:
-                       <span className='text-sm font-semibold sm:ml-2'>0</span>
-                    }
-                   
-                </Link>
+                
 
             </div> 
         </nav>                

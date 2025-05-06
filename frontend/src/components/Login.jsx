@@ -17,13 +17,16 @@ const Login = () => {
   
   const onSubmit = async (data) => {
     try {
-      await loginUser(data.email, data.password)
-      alert("Login Successful");
-      navigate("/")
-
+      console.log('Submitting login:', data.email);
+      const result = await loginUser(data.email, data.password);
+      console.log('Login result:', result);
+      
+      // Always navigate on successful login
+      alert(result || "Login Successful");
+      navigate("/");
     } catch (error) {
-      setMessage("Invalid email ID or Password")
-      console.log(error)
+      console.error('Login submission error:', error);
+      setMessage(error.message || "Login failed. Please try again.");
     }
   }
 
@@ -53,7 +56,7 @@ const Login = () => {
             {errors.password && <p className="text-red-500 text-sm mt-1">Password is required</p>}
           </div>
 
-          {message && <p className="text-red-600 text-center mt-4">{message}</p>}
+          {message && <p className="text-red-600 text-center mt-4 font-bold animate-pulse">{message}</p>}
 
           <div className='flex justify-center'>
             <button

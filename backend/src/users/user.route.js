@@ -2,8 +2,27 @@ const express = require("express");
 const User = require("./user.model");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
-
+const bcrypt = require("bcryptjs");
 const JWT_SECRET = process.env.JWT_SECRET_KEY;
+
+// Validation function
+const validateUserInput = (username, password, role) => {
+    const errors = [];
+    
+    if (!username || username.length < 3) {
+        errors.push("Username must be at least 3 characters long");
+    }
+    
+    if (!password || password.length < 6) {
+        errors.push("Password must be at least 6 characters long");
+    }
+    
+    if (!['user', 'admin'].includes(role)) {
+        errors.push("Invalid role. Must be 'user' or 'admin'");
+    }
+    
+    return errors;
+};
 
 router.post("/admin", async (req, res) => {
     const { username, password } = req.body;
@@ -41,11 +60,11 @@ router.post("/admin", async (req, res) => {
 });
 
 router.post("/user", async (req, res) => {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
     try {
         // Find the user by username
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(401).json({ message: "Invalid credentials" });
@@ -77,6 +96,77 @@ router.post("/user", async (req, res) => {
     } catch (error) {
         console.error("Failed to login", error);
         return res.status(500).json({ message: error.message });
+    }
+});
+
+// Registration route
+router.post("/register", async (req, res) => {
+    const { username, email, password, role } = req.body;
+
+    // Validate input
+    const validationErrors = [];
+    
+    if (!username || username.length < 3) {
+        validationErrors.push("Username must be at least 3 characters long");
+    }
+    
+    if (!email || !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        validationErrors.push("Invalid email address");
+    }
+    
+    if (!password || password.length < 6) {
+        validationErrors.push("Password must be at least 6 characters long");
+    }
+    
+    if (!['user', 'admin'].includes(role)) {
+        validationErrors.push("Invalid role. Must be 'user' or 'admin'");
+    }
+
+    if (validationErrors.length > 0) {
+        return res.status(400).json({ errors: validationErrors });
+    }
+
+    try {
+        // Check if username or email already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            const errorMessage = existingUser.username === username 
+                ? "Username already exists" 
+                : "Email already exists";
+            return res.status(409).json({ message: errorMessage });
+        }
+
+        // Create new user
+        const newUser = new User({
+            username,
+            email,
+            password,
+            role
+        });
+
+        // Save user (password will be hashed automatically by pre-save hook)
+        await newUser.save();
+
+        // Generate token
+        const token = jwt.sign(
+            { id: newUser._id, username: newUser.username, role: newUser.role },
+            JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        return res.status(201).json({
+            message: "User registered successfully",
+            token: token,
+            user: {
+                username: newUser.username,
+                email: newUser.email,
+                role: newUser.role
+            }
+        });
+
+    } catch (error) {
+        console.error("Registration failed", error);
+        return res.status(500).json({ message: "Registration failed", error: error.message });
     }
 });
 

@@ -2,12 +2,10 @@ import { createBrowserRouter } from "react-router-dom";
 import Home from "../pages/Home/Home";
 import Login from "../components/Login";
 import Register from "../components/Register";
-import CartPage from "../pages/books/CartPage";
-import { Outlet } from 'react-router-dom';
-import CheckOutPage from "../pages/books/CheckOutPage";
 import SingleBooks from "../pages/books/SingleBooks";
 import PrivateRoute from "./PrivateRoute";
-import OrdersPage from "../pages/books/OrdersPage";
+import BorrowPage from "../pages/Borrow/BorrowPage";
+import BorrowedBooksPage from "../pages/Borrow/BorrowedBooksPage";
 import AdminRoute from "./AdminRoute";
 import AdminLogin from "../components/AdminLogin";
 
@@ -30,8 +28,12 @@ const router = createBrowserRouter([
         element: <Home />
       },
       {
-        path: "/orders",
-        element: <OrdersPage />
+        path: "/borrow",
+        element: <PrivateRoute><BorrowPage /></PrivateRoute>
+      },
+      {
+        path: "/borrowed-books",
+        element: <PrivateRoute><BorrowedBooksPage /></PrivateRoute>
       },
       {
         path: "/about",
@@ -45,14 +47,7 @@ const router = createBrowserRouter([
         path: "/register",
         element: <Register />
       },
-      {
-        path: "/cart",
-        element: <CartPage />
-      },
-      {
-        path: "/checkout",
-        element: <PrivateRoute><CheckOutPage /></PrivateRoute>
-      },
+      
       {
         path: "/books/:id",
         element: <SingleBooks />

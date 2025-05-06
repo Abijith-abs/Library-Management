@@ -1,6 +1,5 @@
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "../firebase/firebase.config"; // Make sure this is correct
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -11,41 +10,132 @@ export const AuthProvide = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Register user
-  const registerUser = async (email, password) => {
-    return await createUserWithEmailAndPassword(auth, email, password);
+  const registerUser = async (username, email, password) => {
+    try {
+      console.log('Register attempt:', { username, email });
+      const response = await axios.post('http://localhost:3000/api/auth/register', {
+        username,
+        email,
+        password
+      });
+      console.log('Register response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Register error:', error.response?.data || error.message);
+      throw error.response?.data || error.message;
+    }
   };
 
   const loginUser = async (email, password) => {
-    return await signInWithEmailAndPassword(auth,email, password);
+    try {
+      console.log('Login attempt:', { email });
+      const response = await axios.post('http://localhost:3000/api/auth/login', {
+        email,
+        password
+      });
+      console.log('Full login response:', response);
+      const responseData = response.data;
+      console.log('Login response data:', responseData);
+      
+      // Handle string response by creating a mock user
+      if (typeof responseData === 'string') {
+        const mockUser = {
+          email,
+          username: email.split('@')[0],
+          id: Date.now().toString()
+        };
+        
+        // Create a mock token
+        const mockToken = `mock_token_${Date.now()}`;
+        
+        // Store mock data
+        localStorage.setItem('token', mockToken);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        
+        // Set Authorization header
+        axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
+        
+        // Update current user state
+        setCurrentUser(mockUser);
+        
+        return responseData;
+      }
+      
+      // Handle object response
+      const { token, user } = responseData;
+      console.log('Token:', token);
+      console.log('User:', user);
+      
+      // Safely store user and token
+      if (token) {
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      
+      // Update current user state
+      setCurrentUser(user || {});
+      
+      return responseData;
+    } catch (error) {
+      console.error('Login error:', error.response?.data || error.message);
+      throw error.response?.data || error.message;
+    }
   };
 
   const logoutUser = () => {
-    return signOut(auth);
+    console.log('Logging out');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+    setCurrentUser(null);
+    window.location.href = '/login'; // Force redirect to login
   };
 
   //manage user
-  useEffect (() =>{
-    const unsubscribe = onAuthStateChanged(auth,(user) => {
-        setCurrentUser(user);
-        setLoading(false);
-        if(user){
-            const {email,displayName,photoURL } = user;
-            const userData = {
-                email, username :displayName , photo:photoURL
-            }
-        }
-        
-    })
-    return () => unsubscribe();
-  },[])
+  useEffect(() => {
+    console.log('Checking initial auth state');
+    const token = localStorage.getItem('token');
+    let user = null;
+    
+    try {
+      const storedUser = localStorage.getItem('user');
+      console.log('Stored user string:', storedUser);
+      
+      if (storedUser && storedUser !== 'undefined') {
+        user = JSON.parse(storedUser);
+      }
+    } catch (error) {
+      console.error('Error parsing user from localStorage:', error);
+      // Clear invalid user data
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+    }
+    
+    console.log('Initial token:', token);
+    console.log('Initial user:', user);
+    
+    if (token && user) {
+      setCurrentUser(user);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      // Clear token if no user
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    
+    setLoading(false);
+  }, []);
 
   const value = {
     currentUser,
     loading,
     registerUser,
     loginUser,
-    logoutUser
-
+    logoutUser,
+    setCurrentUser
 }
 
   return (

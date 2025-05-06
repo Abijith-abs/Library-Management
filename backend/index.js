@@ -16,7 +16,6 @@ app.use(cors({
 
 
 const bookRoutes = require("./src/books/book.route")
-const borrowRoutes  = require("./src/borrow/borrow.route");
 const userRoutes = require("./src/users/user.route")
 const adminRoutes = require("./src/stats/admin.stats")
 const transactionRoutes = require('./src/transactions/transaction.routes');
@@ -24,7 +23,6 @@ const transactionRoutes = require('./src/transactions/transaction.routes');
 
 app.use('/api/transactions', transactionRoutes);
 app.use("/api/books", bookRoutes)
-app.use('/api/borrow', borrowRoutes);
 app.use("/api/auth",userRoutes)
 app.use("/api/admin",adminRoutes)
 

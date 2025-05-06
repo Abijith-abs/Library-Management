@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const express = require('express');
-const Order = require('../borrow/borrow.model');
+const Transaction = require('../transactions/transaction.model');
 const Book = require('../books/book.model');
 
 const router = express.Router();

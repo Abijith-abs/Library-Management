@@ -23,6 +23,11 @@ const kittySchema = new mongoose.Schema({
     },
     oldPrice: Number,
     newPrice: Number,
+    status: {
+        type: String,
+        enum: ['available', 'borrowed'],
+        default: 'available'
+    },
     createdAt:{
         type: Date,
         default: Date.now()
