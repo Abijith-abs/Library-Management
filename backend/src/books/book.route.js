@@ -3,7 +3,7 @@ const express = require('express');
 const Book = require('../books/book.model');
 
 const { postBook, getAllBooks, getSingleBook, updateBookData, deleteABook } = require('./book.controller');
-const verifyAdminToken = require('../middleware/verifyAdminToken.jsx');
+const verifyAdminToken = require('../middleware/verifyToken.jsx');
 
 const router = express.Router();
 

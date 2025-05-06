@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { returnBook, borrowBook } = require('./transaction.controller');
-const verifyAdminToken = require('../middleware/verifyAdminToken.jsx');
+const verifyAdminToken = require('../middleware/verifyToken.jsx');
 
 // Route to return a book
 router.post('/return', verifyAdminToken, returnBook);

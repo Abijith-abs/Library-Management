@@ -40,4 +40,44 @@ router.post("/admin", async (req, res) => {
     }
 });
 
+router.post("/user", async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        // Find the user by username
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Check if password is correct
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+        if (!isPasswordCorrect) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Generate token
+        const token = jwt.sign(
+            { id: user._id, username: user.username, role: user.role },
+            JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        // Send response with token and user details
+        return res.status(200).json({
+            message: "Authentication successful",
+            token: token,
+            user: {
+                username: user.username,
+                role: user.role,
+            },
+        });
+
+    } catch (error) {
+        console.error("Failed to login", error);
+        return res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;

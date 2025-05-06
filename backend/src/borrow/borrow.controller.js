@@ -1,16 +1,17 @@
 // src/transactions/borrow.controller.js
 const Transaction = require('../transactions/transaction.model');
-const Books       = require('../books/book.model');
-const User        = require('../users/user.model');        // ← import your User model
+const Books = require('../books/book.model');
+const User = require('../users/user.model'); // MongoDB User model
 
 async function borrowBooks(req, res) {
   try {
-    const userId = req.user.uid;                             // ← comes from verifyToken
-    // Optional: validate that user still exists
+    const userId = req.user.id; // ← Now from JWT, not Firebase
+
+    // Validate user exists
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { productIds } = req.body;                        // only need the list of book IDs
+    const { productIds } = req.body; // List of book IDs
     if (!Array.isArray(productIds) || productIds.length === 0) {
       return res.status(400).json({ message: 'No books selected to borrow' });
     }
@@ -26,20 +27,20 @@ async function borrowBooks(req, res) {
       }
 
       const borrowDate = new Date();
-      const dueDate    = new Date(borrowDate);
-      dueDate.setDate(dueDate.getDate() + 14);               // 2-week policy
+      const dueDate = new Date(borrowDate);
+      dueDate.setDate(dueDate.getDate() + 14); // 2-week policy
 
-      // create the transaction
+      // Create transaction
       const tx = await Transaction.create({
-        user:       userId,
-        book:       bookId,
+        user: userId,
+        book: bookId,
         borrowDate,
         dueDate,
         isReturned: false,
-        lateFee:    0,
+        lateFee: 0,
       });
 
-      // mark the book as borrowed
+      // Update book status
       book.status = 'borrowed';
       await book.save();
 
@@ -47,7 +48,7 @@ async function borrowBooks(req, res) {
     }
 
     return res.status(201).json({
-      message:      'Books borrowed successfully!',
+      message: 'Books borrowed successfully!',
       transactions,
     });
   } catch (error) {
