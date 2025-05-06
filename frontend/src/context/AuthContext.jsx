@@ -29,58 +29,70 @@ export const AuthProvide = ({ children }) => {
   const loginUser = async (email, password) => {
     try {
       console.log('Login attempt:', { email });
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await axios.post('http://localhost:3000/api/auth/user', {
         email,
         password
       });
-      console.log('Full login response:', response);
+      
+      // EXTENSIVE LOGGING
+      console.log('FULL RESPONSE OBJECT:', JSON.stringify(response, null, 2));
+      console.log('RESPONSE STATUS:', response.status);
+      console.log('RESPONSE HEADERS:', JSON.stringify(response.headers, null, 2));
+      
       const responseData = response.data;
-      console.log('Login response data:', responseData);
+      console.log('RESPONSE DATA TYPE:', typeof responseData);
+      console.log('FULL RESPONSE DATA:', JSON.stringify(responseData, null, 2));
       
-      // Handle string response by creating a mock user
+      // HANDLE DIFFERENT RESPONSE FORMATS
       if (typeof responseData === 'string') {
-        const mockUser = {
-          email,
-          username: email.split('@')[0],
-          id: Date.now().toString()
-        };
+        console.log('Received string response');
         
-        // Create a mock token
-        const mockToken = `mock_token_${Date.now()}`;
-        
-        // Store mock data
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        
-        // Set Authorization header
-        axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
-        
-        // Update current user state
-        setCurrentUser(mockUser);
-        
-        return responseData;
+        // Create mock user for successful string responses
+        if (responseData.toLowerCase().includes('success')) {
+          const mockUser = {
+            email,
+            username: email.split('@')[0],
+            id: Date.now().toString()
+          };
+          
+          const mockToken = `mock_token_${Date.now()}`;
+          
+          localStorage.setItem('token', mockToken);
+          localStorage.setItem('user', JSON.stringify(mockUser));
+          
+          axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
+          
+          setCurrentUser(mockUser);
+          
+          console.error('WARNING: Using mock authentication due to string response');
+          return mockUser;
+        }
       }
       
-      // Handle object response
-      const { token, user } = responseData;
-      console.log('Token:', token);
-      console.log('User:', user);
-      
-      // Safely store user and token
-      if (token) {
-        localStorage.setItem('token', token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // HANDLE OBJECT RESPONSE
+      if (typeof responseData === 'object') {
+        const { token, user } = responseData;
+        
+        console.log('Extracted Token:', token);
+        console.log('Extracted User:', user);
+        
+        if (token && user) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          setCurrentUser(user);
+          return user;
+        }
       }
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
       
-      // Update current user state
-      setCurrentUser(user || {});
-      
-      return responseData;
+      // IF NO VALID RESPONSE
+      console.error('Invalid login response format');
+      throw new Error('Login failed: Unexpected response format');
     } catch (error) {
-      console.error('Login error:', error.response?.data || error.message);
+      console.error('COMPLETE LOGIN ERROR:', error);
+      console.error('ERROR RESPONSE:', error.response ? JSON.stringify(error.response, null, 2) : 'No error response');
       throw error.response?.data || error.message;
     }
   };

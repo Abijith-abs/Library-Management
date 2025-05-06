@@ -22,10 +22,30 @@ export const fetchBorrowedBooks = createAsyncThunk(
   'borrow/fetchBorrowedBooks',
   async (_, { rejectWithValue }) => {
     try {
+      console.log('Fetching borrowed books...');
       const response = await api.get('/transactions/history');
-      return response.data.transactions;
+      console.log('Full API Response:', response);
+      console.log('Transactions:', response.data.transactions);
+      
+      // Validate and transform transactions
+      const transactions = response.data.transactions || [];
+      const validTransactions = transactions.filter(transaction => 
+        transaction && transaction.book && transaction.book._id
+      );
+      
+      console.log('Valid Transactions:', validTransactions);
+      
+      if (validTransactions.length === 0) {
+        console.warn('No valid transactions found');
+      }
+      
+      return validTransactions;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      console.error('Error fetching borrowed books:', error);
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch borrowed books',
+        error: error.message
+      });
     }
   }
 );
@@ -68,12 +88,27 @@ export const borrowBooks = createAsyncThunk(
 
 export const returnBooks = createAsyncThunk(
   'borrow/returnBooks',
-  async (bookIds, { rejectWithValue }) => {
+  async (booksToReturn, { rejectWithValue }) => {
     try {
-      const response = await api.post('/transactions/return', { bookIds });
-      return response.data;
+      console.log('Attempting to return books:', booksToReturn);
+      const response = await api.post('/transactions/return', { bookIds: booksToReturn });
+      console.log('Return books response:', response.data);
+      
+      // Ensure the response is in the expected format
+      if (response.data && Array.isArray(response.data.returnedTransactions)) {
+        return {
+          returnedTransactions: response.data.returnedTransactions,
+          message: response.data.message || 'Books returned successfully'
+        };
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      console.error('Return books error:', error);
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to return books',
+        failedReturns: booksToReturn
+      });
     }
   }
 );
@@ -102,23 +137,43 @@ const borrowSlice = createSlice({
       })
       .addCase(fetchBorrowedBooks.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchBorrowedBooks.fulfilled, (state, action) => {
-        state.borrowedBooks = action.payload;
+        console.log('Updating borrowedBooks state', action.payload);
+        // Ensure payload is an array before assignment
+        state.borrowedBooks = Array.isArray(action.payload) ? action.payload : [];
         state.loading = false;
+        state.error = null;
+      })
+      .addCase(fetchBorrowedBooks.rejected, (state, action) => {
+        console.error('Fetch borrowed books failed', action.payload);
+        state.borrowedBooks = [];
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch borrowed books';
       })
       .addCase(borrowBooks.fulfilled, (state) => {
         state.borrowList = [];
         state.error = null;
       })
-      .addCase(returnBooks.fulfilled, (state) => {
+      .addCase(returnBooks.fulfilled, (state, action) => {
+        // Remove returned books from the borrowedBooks list
+        if (action.payload && action.payload.returnedTransactions) {
+          const returnedBookIds = action.payload.returnedTransactions.map(t => t.bookId);
+          state.borrowedBooks = state.borrowedBooks.filter(
+            transaction => !returnedBookIds.includes(transaction.book._id)
+          );
+        }
         state.error = null;
       })
       .addMatcher(
         (action) => action.type.endsWith('/rejected'),
         (state, action) => {
           state.loading = false;
-          state.error = action.payload || 'An error occurred';
+          state.error = typeof action.payload === 'string' 
+  ? { message: action.payload } 
+  : (action.payload || { message: 'An error occurred' });
+
         }
       );
   }

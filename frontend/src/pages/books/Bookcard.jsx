@@ -10,17 +10,21 @@ const BookCard = ({ book }) => {
   const { currentUser } = useAuth();
 
   const handleBorrowBook = async () => {
+    console.log('Current User:', currentUser);
     if (!currentUser) {
       navigate('/login');
       return;
     }
 
     const token = localStorage.getItem('token');
+    console.log('Retrieved Token:', token);
     if (!token) {
       alert('Authentication token is missing. Please log in again.');
       navigate('/login');
       return;
     }
+    
+    console.log('Attempting to borrow book with token:', token);
 
     try {
       const response = await axios.post('http://localhost:3000/api/transactions/borrow', 
