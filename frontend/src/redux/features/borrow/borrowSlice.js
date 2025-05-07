@@ -88,27 +88,49 @@ export const borrowBooks = createAsyncThunk(
 
 export const returnBooks = createAsyncThunk(
   'borrow/returnBooks',
-  async (booksToReturn, { rejectWithValue }) => {
+  async (bookIds, { rejectWithValue }) => {
+    console.log('ReturnBooks thunk called with:', bookIds);
+
+    // Validate input
+    if (!bookIds || !Array.isArray(bookIds) || bookIds.length === 0) {
+      console.error('Invalid bookIds provided');
+      return rejectWithValue({ message: 'No books selected to return' });
+    }
+
     try {
-      console.log('Attempting to return books:', booksToReturn);
-      const response = await api.post('/transactions/return', { bookIds: booksToReturn });
-      console.log('Return books response:', response.data);
+      console.log('Attempting to return books:', bookIds);
+      const response = await api.post('/transactions/return', { bookIds });
       
-      // Ensure the response is in the expected format
-      if (response.data && Array.isArray(response.data.returnedTransactions)) {
-        return {
-          returnedTransactions: response.data.returnedTransactions,
-          message: response.data.message || 'Books returned successfully'
-        };
-      } else {
-        throw new Error('Invalid response format');
+      console.log('Return books API response:', response.data);
+
+      // Validate response
+      if (!response.data || !response.data.returnedTransactions) {
+        console.warn('Unexpected API response structure');
+        return rejectWithValue({ message: 'Unexpected server response' });
       }
+
+      return {
+        returnedTransactions: response.data.returnedTransactions,
+        message: response.data.message || 'Books returned successfully'
+      };
     } catch (error) {
-      console.error('Return books error:', error);
-      return rejectWithValue({
-        message: error.response?.data?.message || 'Failed to return books',
-        failedReturns: booksToReturn
-      });
+      console.error('Comprehensive return books error:', error);
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error('Error response details:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+
+      return rejectWithValue(
+        error.response?.data || { 
+          message: error.message || 'Failed to return books',
+          details: error.toString()
+        }
+      );
     }
   }
 );

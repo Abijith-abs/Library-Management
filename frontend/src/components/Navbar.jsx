@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { HiMiniBars3CenterLeft } from "react-icons/hi2"
 import { IoSearchCircle } from "react-icons/io5"
 import { HiOutlineUser } from "react-icons/hi"
-import { HiOutlineHeart } from "react-icons/hi"
+
+import { MdLibraryBooks } from "react-icons/md"
 import avatarImg from "../assets/avatar.png"
 import Login from './Login'
 import Register from './Register'
@@ -11,11 +12,7 @@ import { useAuth } from '../context/AuthContext'
 
 const navigation = [
   {name: "Dashboard", href:"/user-dashboard"},
-  {name: "Borrow Books", href:"/borrow"},
   {name: "Borrowed Books", href:"/borrowed-books"},
-  {name: "Orders", href:"Orders"},
-  {name: "Cart Page", href:"/Cart"},
-  {name: "CheckOut", href:"/CheckOut"}
 ]
 
 const Navbar  = () => {
@@ -91,10 +88,13 @@ const Navbar  = () => {
                 </div>
 
 
-                <button className='hidden sm:block'>
-                <HiOutlineHeart  className='size-6'/>
-                </button>
-                
+                <Link 
+                  to="/borrowed-books" 
+                  className='hidden sm:block ml-2 p-2 rounded-full hover:bg-gray-100 transition-colors'
+                  title='Borrowed Books'
+                >
+                  <MdLibraryBooks className='size-6 text-gray-700'/>
+                </Link>
 
             </div> 
         </nav>                

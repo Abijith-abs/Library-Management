@@ -16,12 +16,34 @@ const Register = () => {
   const onSubmit = async (data) => {
     console.log(data);
     try {
-      await registerUser(data.username, data.email, data.password);
+      await registerUser(data.username, data.email, data.password, data.role);
       alert("User Registered Successfully");
       // Optionally, reset form or redirect user.
     } catch (error) {
       console.error("Registration error: ", error);
-      setMessage(error.message || "Please Provide Valid Credentials");
+      
+      // Specific error handling
+      let errorMessage = "Registration failed";
+      if (error.message) {
+        switch(error.message) {
+          case 'Username is required':
+            errorMessage = 'Please enter a username';
+            break;
+          case 'Invalid email address':
+            errorMessage = 'Please enter a valid email address';
+            break;
+          case 'Password must be at least 6 characters long':
+            errorMessage = 'Password must be at least 6 characters';
+            break;
+          case 'No response from server. Please check your network connection.':
+            errorMessage = 'Network error. Please check your internet connection.';
+            break;
+          default:
+            errorMessage = error.message;
+        }
+      }
+      
+      setMessage(errorMessage);
     }
   };
 
@@ -63,6 +85,20 @@ const Register = () => {
               className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' 
             />
             {errors.password && <p className="text-red-500 text-sm mt-1">Password is required</p>}
+          </div>
+
+          <div className='mb-4'> 
+            <label htmlFor='role' className="block text-gray-500 text-sm font-bold mb-2">Role</label>
+            <select 
+              {...register("role", { required: true })}
+              id="role" 
+              className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+            >
+              <option value="">Select Role</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+            {errors.role && <p className="text-red-500 text-sm mt-1">Role is required</p>}
           </div>
 
           {message && <p className="text-green-600 text-center mt-4">{message}</p>}

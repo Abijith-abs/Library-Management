@@ -10,19 +10,57 @@ export const AuthProvide = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Register user
-  const registerUser = async (username, email, password) => {
+  const registerUser = async (username, email, password, role) => {
+    // Trim whitespace from inputs
+    username = username.trim();
+    email = email.trim();
+
+    // Validate inputs
+    if (!username) {
+      throw new Error('Username is required');
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('Invalid email address');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
+    if (!role || !['user', 'admin'].includes(role)) {
+      throw new Error('Invalid role. Must be either user or admin');
+    }
+
     try {
-      console.log('Register attempt:', { username, email });
+      console.log('Register attempt:', { username, email, role });
       const response = await axios.post('http://localhost:3000/api/auth/register', {
         username,
         email,
-        password
+        password,
+        role
       });
       console.log('Register response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Register error:', error.response?.data || error.message);
-      throw error.response?.data || error.message;
+      // Log full error details
+      console.error('Complete Register Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      // Extract and throw a meaningful error message
+      if (error.response) {
+        // Backend returned an error response
+        const errorMessage = error.response.data.message || 
+                             error.response.data.error || 
+                             'Registration failed';
+        throw new Error(errorMessage);
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new Error('No response from server. Please check your network connection.');
+      } else {
+        // Something happened in setting up the request
+        throw new Error(error.message || 'An unexpected error occurred during registration');
+      }
     }
   };
 
