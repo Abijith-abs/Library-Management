@@ -44,7 +44,8 @@ export const fetchBorrowedBooks = createAsyncThunk(
       console.error('Error fetching borrowed books:', error);
       return rejectWithValue({
         message: error.response?.data?.message || 'Failed to fetch borrowed books',
-        error: error.message
+        error: error.message,
+        toastType: 'error'
       });
     }
   }
@@ -64,7 +65,9 @@ export const addToBorrow = createAsyncThunk(
 
       // Check borrowing limit
       if (currentBorrowList.length >= 3) {
-        throw new Error('Maximum 3 books can be borrowed at a time');
+        const error = new Error('Maximum 3 books can be borrowed at a time');
+        error.toastType = 'warning';
+        throw error;
       }
 
       return [...currentBorrowList, bookId];
@@ -153,18 +156,11 @@ const borrowSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(addToBorrow.fulfilled, (state, action) => {
-        state.borrowList = action.payload;
-        state.error = null;
-      })
       .addCase(fetchBorrowedBooks.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchBorrowedBooks.fulfilled, (state, action) => {
-        console.log('Updating borrowedBooks state', action.payload);
-        // Ensure payload is an array before assignment
-        state.borrowedBooks = Array.isArray(action.payload) ? action.payload : [];
+        state.borrowedBooks = action.payload;
         state.loading = false;
         state.error = null;
       })
@@ -174,9 +170,24 @@ const borrowSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to fetch borrowed books';
       })
-      .addCase(borrowBooks.fulfilled, (state) => {
+      .addCase(addToBorrow.fulfilled, (state, action) => {
+        state.borrowList = action.payload;
+        state.error = null;
+      })
+      .addCase(borrowBooks.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(borrowBooks.fulfilled, (state, action) => {
         state.borrowList = [];
         state.error = null;
+        state.loading = false;
+      })
+      .addCase(borrowBooks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to borrow books';
+      })
+      .addCase(returnBooks.pending, (state) => {
+        state.loading = true;
       })
       .addCase(returnBooks.fulfilled, (state, action) => {
         // Remove returned books from the borrowedBooks list
@@ -187,6 +198,11 @@ const borrowSlice = createSlice({
           );
         }
         state.error = null;
+        state.loading = false;
+      })
+      .addCase(returnBooks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to return books';
       })
       .addMatcher(
         (action) => action.type.endsWith('/rejected'),

@@ -18,7 +18,7 @@ const borrowBooks = async (req, res) => {
             isReturned: false
         });
 
-        if (currentBorrowedBooks + bookIds.length > 3) {
+        if (currentBorrowedBooks + bookIds.length > 4) {
             return res.status(400).json({ message: 'Exceeds maximum book borrowing limit of 3' });
         }
 
@@ -174,7 +174,8 @@ const returnBooks = async (req, res) => {
 // Get user's transaction history
 const getUserTransactions = async (req, res) => {
     try {
-        const userId = req.user.id;
+        // Check if admin is requesting transactions for a specific user
+        const userId = req.params.userId || req.user.id;
 
         const transactions = await Transaction.find({ user: userId })
             .populate('book', 'title')

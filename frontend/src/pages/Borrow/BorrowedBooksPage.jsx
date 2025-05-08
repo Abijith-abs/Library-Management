@@ -6,38 +6,32 @@ const BorrowedBooksPage = () => {
   const dispatch = useDispatch();
   const { borrowedBooks, loading, error } = useSelector(state => state.borrow);
   const [selectedBooks, setSelectedBooks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  // Memoized separation of current and past borrowed books
-  const { currentlyBorrowedBooks, pastBorrowedBooks } = useMemo(() => {
+  // Separate and paginate books
+  const { currentlyBorrowedBooks, pastBorrowedBooks, pastBorrowedBooksPaginated } = useMemo(() => {
+    const pastBooks = borrowedBooks.filter(transaction => transaction?.book && transaction.returnDate);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedBooks = pastBooks.slice(startIndex, endIndex);
+
     return {
-      currentlyBorrowedBooks: borrowedBooks.filter(transaction => 
-        transaction && transaction.book && !transaction.returnDate
-      ),
-      pastBorrowedBooks: borrowedBooks.filter(transaction => 
-        transaction && transaction.book && transaction.returnDate
-      )
+      currentlyBorrowedBooks: borrowedBooks.filter(transaction => transaction?.book && !transaction.returnDate),
+      pastBorrowedBooks: pastBooks,
+      pastBorrowedBooksPaginated: paginatedBooks
     };
-  }, [borrowedBooks]);
+  }, [borrowedBooks, currentPage]);
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        await dispatch(fetchBorrowedBooks());
-      } catch (error) {
-        console.error('Error fetching borrowed books:', error);
-      }
-    };
-    fetchBooks();
+    dispatch(fetchBorrowedBooks()).catch(err => console.error('Error fetching borrowed books:', err));
   }, [dispatch]);
 
   const handleReturnBooks = useCallback((event) => {
-    // Determine the books to return
     let bookIds;
     if (Array.isArray(event)) {
-      // If an array of book IDs is directly passed
       bookIds = event;
     } else if (event && typeof event === 'object' && 'preventDefault' in event) {
-      // If it's an event (from button click), use selected books
       bookIds = selectedBooks;
     } else {
       alert('Invalid return request');
@@ -53,7 +47,7 @@ const BorrowedBooksPage = () => {
       .then((action) => {
         if (action.type === 'borrow/returnBooks/fulfilled') {
           const payload = action.payload;
-          if (payload && payload.returnedTransactions) {
+          if (payload?.returnedTransactions) {
             setSelectedBooks([]);
             alert(payload.message || 'Books returned successfully');
           } else {
@@ -64,167 +58,118 @@ const BorrowedBooksPage = () => {
         }
       })
       .catch((error) => {
-        const errorMessage = 
-          error.payload?.message || 
-          error.message || 
-          'Failed to return books';
-        
+        const errorMessage = error?.payload?.message || error.message || 'Failed to return books';
         alert(`Error: ${errorMessage}`);
       });
   }, [dispatch, selectedBooks]);
 
   const toggleBookSelection = (bookId) => {
-    setSelectedBooks(prev => 
-      prev.includes(bookId) 
-        ? prev.filter(id => id !== bookId)
-        : [...prev, bookId]
-    );
+    setSelectedBooks(prev => prev.includes(bookId)
+      ? prev.filter(id => id !== bookId)
+      : [...prev, bookId]);
   };
 
-  // Loading and error states remain the same
   if (loading) {
-    return (
-      <div className='container mx-auto px-4 py-8 text-center'>
-        <p className='text-xl text-gray-600'>Loading borrowed books...</p>
-      </div>
-    );
+    return <div className='text-center py-10'>Loading borrowed books...</div>;
   }
 
   if (error) {
     return (
-      <div className='container mx-auto px-4 py-8 text-center'>
-        <p className='text-xl text-red-600'> 
-          Error: {typeof error === 'string' ? error : error?.message || 'Failed to load borrowed books'}
-        </p>
-        <button 
-          onClick={() => dispatch(fetchBorrowedBooks())}
-          className='mt-4 px-4 py-2 bg-blue-500 text-white rounded'
-        >
-          Retry Loading
+      <div className='text-center py-10 text-red-600'>
+        Error: {typeof error === 'string' ? error : error?.message || 'Failed to load books'}
+        <br />
+        <button onClick={() => dispatch(fetchBorrowedBooks())} className='mt-4 bg-blue-500 text-white px-4 py-2 rounded'>
+          Retry
         </button>
       </div>
     );
   }
 
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <h2 className='text-3xl font-bold text-center mb-6 text-gray-800'>My Borrowed Books</h2>
-      
-      {/* Currently Borrowed Books Section */}
-      <section className='mb-8'>
+    <div className='max-w-5xl mx-auto px-6 py-10'>
+      <h1 className='text-3xl font-bold text-center mb-8 text-indigo-800'>My Library Journey</h1>
+
+      {/* CURRENTLY BORROWED */}
+      <div className='mb-10'>
         <div className='flex justify-between items-center mb-4'>
-          <h3 className='text-2xl font-semibold text-gray-700'>Currently Borrowed Books</h3>
+          <h2 className='text-2xl font-semibold text-indigo-700'>Currently Borrowed Books</h2>
           {currentlyBorrowedBooks.length > 0 && (
-            <div className='space-x-4'>
-              <button 
-                onClick={() => {
-                  const bookIds = selectedBooks;
-                  handleReturnBooks(bookIds);
-                }}
+            <div className='space-x-2'>
+              <button
+                onClick={() => handleReturnBooks(selectedBooks)}
                 disabled={selectedBooks.length === 0}
-                className='px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
-                           disabled:bg-blue-300 disabled:cursor-not-allowed 
-                           transition-colors duration-300'
+                className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300'
               >
-                Return Selected Books
+                Return Selected
               </button>
-              <button 
-                onClick={() => {
-                  const bookIds = currentlyBorrowedBooks
-                    .filter(t => t && t.book)
-                    .map(t => t.book._id);
-                  handleReturnBooks(bookIds);
-                }}
-                className='px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 
-                           transition-colors duration-300'
+              <button
+                onClick={() => handleReturnBooks(currentlyBorrowedBooks.map(t => t.book._id))}
+                className='bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700'
               >
-                Return All Books
+                Return All
               </button>
             </div>
           )}
         </div>
         {currentlyBorrowedBooks.length === 0 ? (
-          <div className='text-center bg-blue-50 p-6 rounded-lg'>
-            <p className='text-blue-600 text-xl'>No books currently borrowed.</p>
-          </div>
+          <p className='text-center text-gray-600'>No books currently borrowed.</p>
         ) : (
-          <div className='grid gap-4'>
+          <div className='space-y-4'>
             {currentlyBorrowedBooks.map(transaction => (
-              <div 
-                key={transaction._id} 
-                className='flex items-center bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-300'
-              >
-                <input 
-                  type='checkbox' 
-                  className='mr-4 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+              <div key={transaction._id} className='flex items-start bg-gray-50 p-4 rounded-md shadow'>
+                <input
+                  type='checkbox'
                   checked={selectedBooks.includes(transaction.book._id)}
                   onChange={() => toggleBookSelection(transaction.book._id)}
+                  className='mt-1 mr-4 h-5 w-5'
                 />
-                <div className='flex-grow'>
-                  <h3 className='text-xl font-semibold text-gray-800'>
-                    {transaction.book?.title || 'Unknown Title'}
-                  </h3>
-                  <div className='text-gray-600 mt-2'>
-                    <p>
-                      <span className='font-medium'>Borrowed on:</span>{' '}
-                      {transaction.borrowDate 
-                        ? new Date(transaction.borrowDate).toLocaleDateString() 
-                        : 'Unknown Date'}
-                    </p>
-                    <p>
-                      <span className='font-medium'>Due Date:</span>{' '}
-                      {transaction.dueDate 
-                        ? new Date(transaction.dueDate).toLocaleDateString() 
-                        : 'Unknown Due Date'}
-                    </p>
-                  </div>
+                <div>
+                  <h3 className='text-xl font-bold text-gray-800'>{transaction.book.title}</h3>
+                  <p className='text-gray-600'>Borrowed: {new Date(transaction.borrowDate).toLocaleDateString()}</p>
+                  <p className='text-red-500'>Due: {new Date(transaction.dueDate).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </section>
+      </div>
 
-      {/* Past Borrowed Books Section */}
-      <section>
-        <h3 className='text-2xl font-semibold mb-4 text-gray-700'>Past Borrowed Books</h3>
+      {/* PAST BORROWED */}
+      <div>
+        <h2 className='text-2xl font-semibold mb-4 text-gray-700'>Past Borrowed Books</h2>
         {pastBorrowedBooks.length === 0 ? (
-          <div className='text-center bg-gray-50 p-6 rounded-lg'>
-            <p className='text-gray-600 text-xl'>No past borrowed books.</p>
-          </div>
+          <p className='text-center text-gray-600'>No past borrowed books.</p>
         ) : (
-          <div className='grid gap-4'>
-            {pastBorrowedBooks.map(transaction => (
-              <div 
-                key={transaction._id} 
-                className='flex items-center bg-gray-100 shadow-md rounded-lg p-4'
-              >
-                <div className='flex-grow'>
-                  <h3 className='text-xl font-semibold text-gray-800'>
-                    {transaction.book?.title || 'Unknown Title'}
-                  </h3>
-                  <div className='text-gray-600 mt-2'>
-                    <p>
-                      <span className='font-medium'>Borrowed on:</span>{' '}
-                      {transaction.borrowDate 
-                        ? new Date(transaction.borrowDate).toLocaleDateString() 
-                        : 'Unknown Date'}
-                    </p>
-                    <p>
-                      <span className='font-medium'>Returned on:</span>{' '}
-                      {transaction.returnDate 
-                        ? new Date(transaction.returnDate).toLocaleDateString() 
-                        : 'Unknown Return Date'}
-                    </p>
-                  </div>
+          <>
+            <div className='space-y-4 mb-6'>
+              {pastBorrowedBooksPaginated.map(transaction => (
+                <div key={transaction._id} className='bg-white p-4 rounded-lg shadow-md'>
+                  <h3 className='text-lg font-bold'>{transaction.book?.title || 'Unknown Title'}</h3>
+                  <p className='text-gray-600'>Borrowed on: {new Date(transaction.borrowDate).toLocaleDateString()}</p>
+                  <p className='text-gray-500'>Returned on: {new Date(transaction.returnDate).toLocaleDateString()}</p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className='flex justify-center items-center space-x-4'>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className='px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-300'
+              >
+                Previous
+              </button>
+              <span className='text-gray-700'>Page {currentPage} of {Math.ceil(pastBorrowedBooks.length / itemsPerPage)}</span>
+              <button
+                onClick={() => setCurrentPage(prev => prev < Math.ceil(pastBorrowedBooks.length / itemsPerPage) ? prev + 1 : prev)}
+                disabled={currentPage >= Math.ceil(pastBorrowedBooks.length / itemsPerPage)}
+                className='px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-300'
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
-      </section>
-
-      {/* Buttons removed, now placed in the Currently Borrowed Books section */}
+      </div>
     </div>
   );
 };

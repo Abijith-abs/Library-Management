@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToBorrow, borrowBooks } from '../../redux/features/borrow/borrowSlice';
 import { fetchBooks } from '../../redux/features/books/bookSlice';
+import { useToast } from '../../context/ToastContext';
 
 const BorrowPage = () => {
   const dispatch = useDispatch();
+  const { addToast } = useToast();
   const { books, loading, error } = useSelector(state => state.books);
   const borrowList = useSelector(state => state.borrow.borrowList);
   const [selectedBooks, setSelectedBooks] = useState([]);
@@ -14,11 +16,22 @@ const BorrowPage = () => {
   }, [dispatch]);
 
   const handleAddToBorrow = (bookId) => {
-    dispatch(addToBorrow({ bookId }));
+    try {
+      dispatch(addToBorrow({ bookId }));
+      addToast('Book added to borrow list', 'success');
+    } catch (error) {
+      addToast(error.message || 'Failed to add book to borrow list', 'error');
+    }
   };
 
   const handleBorrowBooks = () => {
-    dispatch(borrowBooks(borrowList));
+    dispatch(borrowBooks(borrowList)).then((result) => {
+      if (result.meta.requestStatus === 'fulfilled') {
+        addToast('Books borrowed successfully!', 'success');
+      } else if (result.meta.requestStatus === 'rejected') {
+        addToast(result.payload || 'Failed to borrow books', 'error');
+      }
+    });
   };
 
   if (loading) return <div>Loading books...</div>;

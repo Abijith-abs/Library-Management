@@ -44,36 +44,65 @@ const AdminLogin = () => {
 
 
   return (
-    <div className='h-screen flex justify-center items-center'>
-    <div className='w-full max-w-sm mx-auto bg-white p-6 shadow-md rounded px-8 pt-6 pb-8 mb-4'>
-      <h2 className='text-2xl font-bold mb-4 text-center'>Admin Login </h2>
+    <div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-md w-full space-y-8 bg-white shadow-2xl rounded-xl p-10 border border-gray-100'>
+        <div>
+          <h2 className='mt-6 text-center text-4xl font-extrabold text-indigo-900'>
+            Admin Portal
+          </h2>
+          <p className='mt-2 text-center text-sm text-gray-600'>
+            Sign in to access administrative controls
+          </p>
+        </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className='mb-4'>
-          <label htmlFor='username' className="block text-gray-500 text-sm font-bold mb-2">Username</label>
+          <label htmlFor='username' className='sr-only'>Username</label>
           <input
-            {...register("username", { required: true })}
-            type="text" id="username" placeholder='Username'
-            className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+            {...register("username", { 
+              required: 'Username is required',
+              minLength: {
+                value: 3,
+                message: 'Username must be at least 3 characters'
+              }
+            })}
+            type="text" 
+            id="username" 
+            placeholder='Username'
+            className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
           />
-          {errors.email && <p className="text-red-500 text-sm mt-1">Email is required</p>}
+          {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
         </div>
 
-        <div className='mb-4'>
-          <label htmlFor='password' className="block text-gray-500 text-sm font-bold mb-2">Password</label>
+        <div className='relative mb-4'>
+          <label htmlFor='password' className='sr-only'>Password</label>
           <input
-            {...register("password", { required: true })}
-            type="password" id="password" placeholder='Password'
-            className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+            {...register("password", { 
+              required: 'Password is required',
+              minLength: {
+                value: 6,
+                message: 'Password must be at least 6 characters'
+              }
+            })}
+            type="password" 
+            id="password" 
+            placeholder='Password'
+            className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
           />
-          {errors.password && <p className="text-red-500 text-sm mt-1">Password is required</p>}
+          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
         </div>
 
-        {message && <p className="text-red-600 text-center mt-4">{message}</p>}
+        {message && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{message}</span>
+          </div>
+        )}
 
         <div className='flex justify-center'>
           <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6 w-full'>
+            type="submit"
+            className='group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300'
+          >
             Login
           </button>
         </div>

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AuthProvider from '../../context/AuthContext';
 import Swal from 'sweetalert2';
 import { useCreateAnOrderMutation } from '../../redux/features/orders/ordersApi';
 

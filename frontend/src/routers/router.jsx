@@ -16,6 +16,7 @@ import ManageBooks from "../pages/Dashboard/manageBooks/ManageBooks";
 import AddBook from "../pages/Dashboard/addBook/AddBook";
 import UpdateBook from "../pages/Dashboard/editBook/UpdateBook";
 import UserDashboard from "../pages/Dashboard/users/UserDashboard";
+import UserDetails from "../pages/Dashboard/UserDetails";
 
 const router = createBrowserRouter([
   // User routes with navbar
@@ -86,6 +87,10 @@ const router = createBrowserRouter([
       {
         path: "manage-books", // This is a relative path as well
         element: <ManageBooks/>
+      },
+      {
+        path: "user-details", // New route for user details
+        element: <UserDetails/>
       }
     ]
   }

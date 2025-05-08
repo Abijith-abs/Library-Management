@@ -2,63 +2,113 @@ const mongoose = require('mongoose');
 const express = require('express');
 const Transaction = require('../transactions/transaction.model');
 const Book = require('../books/book.model');
+const User = require('../users/user.model');
 
 const router = express.Router();
-
-
-
 
 // Function to calculate admin stats
 router.get("/", async (req, res) => {
     try {
-        // 1. Total number of orders
-        const totalOrders = await Order.countDocuments();
+        // Total number of books
+        const totalBooks = await Book.countDocuments();
 
-        // 2. Total sales (sum of all totalPrice from orders)
-        const totalSales = await Order.aggregate([
+        // Total number of users
+        const totalUsers = await User.countDocuments();
+
+        // Total transactions
+        const totalTransactions = await Transaction.countDocuments();
+
+        // Overdue books
+        const overdueBooks = await Transaction.countDocuments({
+            status: 'BORROWED',
+            dueDate: { $lt: new Date() }
+        });
+
+        // Top borrowed books
+        const topBorrowedBooks = await Transaction.aggregate([
+            { $match: { status: 'BORROWED' } },
+            { $group: { _id: '$book', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 5 },
             {
-                $group: {
-                    _id: null,
-                    totalSales: { $sum: "$totalPrice" },
+                $lookup: {
+                    from: 'books',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'bookDetails'
+                }
+            },
+            { $unwind: '$bookDetails' },
+            {
+                $project: {
+                    title: '$bookDetails.title',
+                    author: '$bookDetails.author',
+                    count: 1
                 }
             }
         ]);
 
-        // 4. Trending books statistics: 
-        const trendingBooksCount = await Book.aggregate([
-            { $match: { trending: true } },  // Match only trending books
-            { $count: "trendingBooksCount" }  // Return the count of trending books
-        ]);
-        
-        // If you want just the count as a number, you can extract it like this:
-        const trendingBooks = trendingBooksCount.length > 0 ? trendingBooksCount[0].trendingBooksCount : 0;
-
-        // 5. Total number of books
-        const totalBooks = await Book.countDocuments();
-
-        // 6. Monthly sales (group by month and sum total sales for each month)
-        const monthlySales = await Order.aggregate([
+        // Monthly transaction data (last 12 months)
+        const monthlyTransactions = await Transaction.aggregate([
             {
                 $group: {
-                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },  // Group by year and month
-                    totalSales: { $sum: "$totalPrice" },  // Sum totalPrice for each month
-                    totalOrders: { $sum: 1 }  // Count total orders for each month
+                    _id: { $dateToString: { format: "%m", date: "$createdAt" } },
+                    count: { $sum: 1 }
                 }
             },
-            { $sort: { _id: 1 } }  
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Prepare monthly transaction data for chart (ensure 12 months)
+        const transactionData = Array(12).fill(0).map((_, index) => {
+            const monthData = monthlyTransactions.find(m => parseInt(m._id) === index + 1);
+            return monthData ? monthData.count : 0;
+        });
+
+        // Top borrowers
+        const topBorrowers = await Transaction.aggregate([
+            { $match: { status: 'BORROWED' } },
+            { 
+                $group: { 
+                    _id: '$user', 
+                    borrowCount: { $sum: 1 } 
+                } 
+            },
+            { $sort: { borrowCount: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'userDetails'
+                }
+            },
+            { $unwind: '$userDetails' },
+            {
+                $project: {
+                    name: '$userDetails.username',
+                    avatar: '$userDetails.avatar',
+                    borrowCount: 1
+                }
+            }
         ]);
 
         // Result summary
-        res.status(200).json({  totalOrders,
-            totalSales: totalSales[0]?.totalSales || 0,
-            trendingBooks,
+        res.status(200).json({
             totalBooks,
-            monthlySales, });
+            totalUsers,
+            totalTransactions,
+            overdueBooks,
+            topBooks: topBorrowedBooks,
+            monthlyTransactions: transactionData,
+            topBorrowers
+        });
       
     } catch (error) {
         console.error("Error fetching admin stats:", error);
         res.status(500).json({ message: "Failed to fetch admin stats" });
     }
-})
+});
 
 module.exports = router;

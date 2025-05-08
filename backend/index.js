@@ -31,9 +31,30 @@ app.use("/api/admin",adminRoutes)
 async function main() {
     await mongoose.connect(process.env.DB_URL);
 
-    app.use('/', (req, res) => {
-        res.json('Library is runniing succesfully')
-      })
+    // Debugging: Log all registered routes
+    app._router.stack.forEach(function(r){
+      if (r.route && r.route.path) {
+        console.log(`Registered route: ${Object.keys(r.route.methods).join(',')} ${r.route.path}`);
+      }
+    });
+
+    // Health check route
+    app.get('/', (req, res) => {
+        res.json({ status: 'ok', message: 'Library Management API is running' })
+    });
+
+    // Specific routes
+    app.use('/api/transactions', transactionRoutes);
+    app.use('/api/books', bookRoutes);
+    app.use('/api/auth', userRoutes);
+    app.use('/api/admin', adminRoutes);
+
+    // Catch-all route for undefined routes
+    app.use((req, res) => {
+        console.log(`Unhandled route: ${req.method} ${req.path}`);
+        res.status(404).json({ status: 'error', message: 'Route not found' });
+    });
+
     // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
   }
 

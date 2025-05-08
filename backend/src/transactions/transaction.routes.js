@@ -9,7 +9,10 @@ router.post('/borrow', verifyToken, borrowBooks);
 // Route to return multiple books
 router.post('/return', verifyToken, returnBooks);
 
-// Route to get user's transaction history
+// Route to get user's transaction history for current logged-in user
 router.get('/history', verifyToken, getUserTransactions);
+
+// Route to get user's transaction history by user ID (for admin)
+router.get('/history/:userId', verifyToken, getUserTransactions);
 
 module.exports = router;

@@ -27,7 +27,11 @@ export const booksApi = createApi({
 
         fetchBookById: builder.query({
             query: (id) => `/${id}`,
-            providesTags: (results,error,id) => [{type:'Books',id}],
+            providesTags: (results, error, id) => [{type: 'Books', id}],
+            transformResponse: (response) => {
+                console.log('Book fetch response:', response);
+                return response.book || response; // Handle both { book: {...} } and direct book object
+            },
           }),
           
 

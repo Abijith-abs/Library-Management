@@ -1,109 +1,124 @@
-import React from 'react'
-import { useDeleteBookMutation, useFetchAllBooksQuery } from '../../../redux/features/books/booksApi';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react'
+import { FaEdit, FaTrash, FaPlus, FaSearch } from 'react-icons/fa'
+import Swal from 'sweetalert2'
+import { Link, useNavigate } from 'react-router-dom'
+import { useDeleteBookMutation, useFetchAllBooksQuery } from '../../../redux/features/books/booksApi'
 
 const ManageBooks = () => {
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { data, refetch } = useFetchAllBooksQuery();
-    const books = Array.isArray(data) ? data : data?.books || [];
+    const [deleteBook] = useDeleteBookMutation();
 
-    const [deleteBook] = useDeleteBookMutation()
+    // Memoized filtered books
+    const filteredBooks = useMemo(() => {
+        if (!data?.books) return [];
+        return data.books.filter(book => 
+            book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            book.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [data?.books, searchTerm]);
 
-    // Handle deleting a book
-    const handleDeleteBook = async (id) => {
-        try {
-            await deleteBook(id).unwrap();
-            alert('Book deleted successfully!');
-            refetch();
-
-        } catch (error) {
-            console.error('Failed to delete book:', error.message);
-            alert('Failed to delete book. Please try again.');
-        }
+    // Handle deleting a book with SweetAlert confirmation
+    const handleDeleteBook = (id) => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You won\'t be able to revert this!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await deleteBook(id).unwrap();
+                    Swal.fire(
+                        'Deleted!',
+                        'The book has been deleted.',
+                        'success'
+                    );
+                    refetch();
+                } catch (error) {
+                    Swal.fire(
+                        'Error!',
+                        'Could not delete the book.',
+                        'error'
+                    );
+                }
+            }
+        });
     };
 
-    // Handle navigating to Edit Book page
-    const handleEditClick = (id) => {
-        navigate(`dashboard/edit-book/${id}`);
-    };
-  return (
-    <section className="py-1 bg-blueGray-50">
-    <div className="w-full xl:w-8/12 mb-12 xl:mb-0 px-4 mx-auto mt-24">
-        <div className="relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded ">
-            <div className="rounded-t mb-0 px-4 py-3 border-0">
-                <div className="flex flex-wrap items-center">
-                    <div className="relative w-full px-4 max-w-full flex-grow flex-1">
-                        <h3 className="font-semibold text-base text-blueGray-700">All Books</h3>
-                    </div>
-                    <div className="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
-                        <button className="bg-indigo-500 text-white active:bg-indigo-600 text-xs font-bold uppercase px-3 py-1 rounded outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150" type="button">See all</button>
-                    </div>
-                </div>
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Manage Books</h2>
+                <Link 
+                    to="/dashboard/add-new-book" 
+                    className="flex items-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+                >
+                    <FaPlus className="mr-2" /> Add New Book
+                </Link>
             </div>
 
-            <div className="block w-full overflow-x-auto">
-                <table className="items-center bg-transparent w-full border-collapse ">
-                    <thead>
+            <div className="mb-4 relative">
+                <input 
+                    type="text" 
+                    placeholder="Search books by title or category..." 
+                    className="w-full p-2 pl-8 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <FaSearch className="absolute left-2 top-3 text-gray-400" />
+            </div>
+
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-gray-100">
                         <tr>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                #
-                            </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Book Title
-                            </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Category
-                            </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Price
-                            </th>
-                            <th className="px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Actions
-                            </th>
+                            <th className="p-3 text-left">Title</th>
+                            <th className="p-3 text-left">Category</th>
+                            <th className="p-3 text-left">Price</th>
+                            <th className="p-3 text-left">Actions</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        {
-                            books && books.map((book, index) => (
-                                <tr key={index}>
-                                <th className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                                   {index + 1}
-                                </th>
-                                <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                                    {book.title}
+                        {filteredBooks.length === 0 ? (
+                            <tr>
+                                <td colSpan="4" className="text-center p-4 text-gray-500">
+                                    No books found
                                 </td>
-                                <td className="border-t-0 px-6 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                                  {book.category}
-                                </td>
-                                <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-
-                                    ${book.newPrice}
-                                </td>
-                                <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 space-x-4">
-
-                                    <Link to={`/dashboard/edit-book/${book._id}`} className="font-medium text-indigo-600 hover:text-indigo-700 mr-2 hover:underline underline-offset-2">
-                                        Edit
-                                    </Link>
-                                    <button 
-                                    onClick={() => handleDeleteBook(book._id)}
-                                    className="font-medium bg-red-500 py-1 px-4 rounded-full text-white mr-2">Delete</button>
-                                </td>
-                            </tr> 
+                            </tr>
+                        ) : (
+                            filteredBooks.map((book) => (
+                                <tr key={book._id} className="border-b hover:bg-gray-50 transition">
+                                    <td className="p-3">{book.title}</td>
+                                    <td className="p-3">{book.category}</td>
+                                    <td className="p-3">${book.newPrice}</td>
+                                    <td className="p-3 flex space-x-2">
+                                        <Link 
+                                            to={`/dashboard/edit-book/${book._id}`} 
+                                            className="text-blue-500 hover:text-blue-700"
+                                        >
+                                            <FaEdit />
+                                        </Link>
+                                        <button 
+                                            onClick={() => handleDeleteBook(book._id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    </td>
+                                </tr>
                             ))
-                        }
-         
-
+                        )}
                     </tbody>
-
                 </table>
             </div>
         </div>
-    </div>
+    );
+};
 
-</section>
-  )
-}
-
-export default ManageBooks
+export default ManageBooks;

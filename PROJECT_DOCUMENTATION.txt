@@ -1,0 +1,86 @@
+Library Management System - Project Documentation
+
+Project Overview:
+A comprehensive web application for managing a library, allowing users to perform various operations related to book management, borrowing, and user authentication.
+
+FRONTEND (React with Redux)
+----------------------------
+1. Authentication Context (AuthContext.jsx):
+   - Manages user authentication state
+   - Provides login, logout, and authentication-related functions
+   - Handles user sessions and access tokens
+
+2. Redux Slices:
+   a) Borrow Slice (borrowSlice.js):
+      - Manages book borrowing operations
+      - Functions:
+        * fetchBorrowedBooks: Retrieves user's borrowed books
+        * addToBorrow: Adds a book to borrowing list
+          - Checks borrowing limit (max 3 books)
+          - Prevents duplicate borrowings
+        * Handles async operations with error management
+
+   b) Other Potential Slices (inferred):
+      - Book management
+      - User profile
+      - Transaction tracking
+
+3. Pages/Components:
+   a) Dashboard/AddBook (AddBook.jsx):
+      - Provides interface for adding new books to the library
+      - Likely includes form for book details entry
+      - Handles book creation logic
+
+BACKEND (Node.js/Express)
+-------------------------
+1. Models:
+   a) Book Model (book.model.js):
+      - Defines book schema
+      - Includes fields like title, author, copies, etc.
+      - Manages book-related database interactions
+
+   b) Transaction Model (transaction.model.js):
+      - Tracks book borrowing and return transactions
+      - Stores transaction details like user, book, dates
+      - Helps in maintaining borrowing history
+
+2. Controllers:
+   a) Transaction Controller (transaction.controller.js):
+      - Handles transaction-related operations
+      - Functions likely include:
+        * Creating new transactions
+        * Updating transaction status
+        * Retrieving transaction history
+
+3. Scripts:
+   a) Update Book Copies (update_book_copies.js):
+      - Script to manage book inventory
+      - Likely updates book copy count after borrowing/returning
+
+Key Features:
+- User authentication
+- Book borrowing system
+- Book inventory management
+- Transaction tracking
+- Dashboard for library operations
+
+Technical Stack:
+- Frontend: React, Redux, Context API
+- Backend: Node.js, Express
+- Database: Likely MongoDB
+- State Management: Redux Toolkit
+- Authentication: JWT (JSON Web Tokens)
+
+Workflow:
+1. User logs in
+2. Browse available books
+3. Borrow books (max 3)
+4. Track borrowed books
+5. Return books
+6. Admin can add/manage books
+
+Potential Improvements:
+- Implement book search functionality
+- Add book recommendation system
+- Create more detailed user roles (admin, member)
+- Implement fine calculation for late returns

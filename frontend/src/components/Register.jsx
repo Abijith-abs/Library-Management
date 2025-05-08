@@ -1,120 +1,175 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useForm } from "react-hook-form";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
 import { useAuth } from '../context/AuthContext';
+import AuthProvider from '../context/AuthContext';
+
+const USER_ROLES = [
+  { value: 'user', label: 'Regular User' },
+  { value: 'admin', label: 'Administrator' }
+];
 
 const Register = () => {
-  const [message, setMessage] = React.useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
   const { registerUser } = useAuth();
   const {
     register,
     handleSubmit,
-    formState: { errors }
-  } = useForm();
-  
-  // RegisterUser
+    formState: { errors, isSubmitting },
+    watch
+  } = useForm({
+    defaultValues: {
+      username: '',
+      email: '',
+      password: '',
+      role: ''
+    }
+  });
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const onSubmit = async (data) => {
-    console.log(data);
     try {
-      await registerUser(data.username, data.email, data.password, data.role);
-      alert("User Registered Successfully");
-      // Optionally, reset form or redirect user.
-    } catch (error) {
-      console.error("Registration error: ", error);
+      const result = await registerUser(data.username, data.email, data.password, data.role);
       
-      // Specific error handling
-      let errorMessage = "Registration failed";
-      if (error.message) {
-        switch(error.message) {
-          case 'Username is required':
-            errorMessage = 'Please enter a username';
-            break;
-          case 'Invalid email address':
-            errorMessage = 'Please enter a valid email address';
-            break;
-          case 'Password must be at least 6 characters long':
-            errorMessage = 'Password must be at least 6 characters';
-            break;
-          case 'No response from server. Please check your network connection.':
-            errorMessage = 'Network error. Please check your internet connection.';
-            break;
-          default:
-            errorMessage = error.message;
-        }
+      if (result) {
+        toast.success('Registration Successful!');
+        navigate('/login');
+      } else {
+        toast.error('Registration failed. Please try again.');
       }
-      
-      setMessage(errorMessage);
+    } catch (error) {
+      const errorMessage = error.message || 'An unexpected error occurred';
+      toast.error(errorMessage);
     }
   };
 
   return (
-    <div className='h-[calc(100vh-120px)] flex justify-center items-center'>
-      <div className='w-full max-w-sm mx-auto bg-white p-6 shadow-md rounded px-8 pt-6 pb-8 mb-4'>
-        <h2 className='text-2xl font-bold mb-4 text-center'>Register Here</h2>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className='mb-4'> 
-            <label htmlFor='username' className="block text-gray-500 text-sm font-bold mb-2">Username</label>
-            <input 
-              {...register("username", { required: true })}
-              type="text" 
-              id="username" 
-              placeholder='Username'
-              className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' 
-            />
-            {errors.username && <p className="text-red-500 text-sm mt-1">Username is required</p>}
-          </div>
-          <div className='mb-4'> 
-            <label htmlFor='email' className="block text-gray-500 text-sm font-bold mb-2">Email</label>
-            <input 
-              {...register("email", { required: true, pattern: /^\S+@\S+$/i })}
-              type="email" 
-              id="email" 
-              placeholder='Email Address'
-              className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' 
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">Valid email is required</p>}
-          </div>
-          
-          <div className='mb-4'> 
-            <label htmlFor='password' className="block text-gray-500 text-sm font-bold mb-2">Password</label>
-            <input 
-              {...register("password", { required: true })}
-              type="password" 
-              id="password" 
-              placeholder='Password'
-              className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' 
-            />
-            {errors.password && <p className="text-red-500 text-sm mt-1">Password is required</p>}
+    <div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-md w-full space-y-8 bg-white shadow-2xl rounded-xl p-10 border border-gray-100'>
+        <div>
+          <h2 className='mt-6 text-center text-4xl font-extrabold text-indigo-900'>
+            Create Your Account
+          </h2>
+          <p className='mt-2 text-center text-sm text-gray-600'>
+            Start your library journey
+          </p>
+        </div>
+
+        <form className='mt-8 space-y-6' onSubmit={handleSubmit(onSubmit)}>
+          <div className='rounded-md shadow-sm -space-y-px'>
+            <div className='mb-4'>
+              <label htmlFor='username' className='sr-only'>Username</label>
+              <input
+                {...register('username', {
+                  required: 'Username is required',
+                  minLength: {
+                    value: 3,
+                    message: 'Username must be at least 3 characters'
+                  }
+                })}
+                id='username'
+                type='text'
+                placeholder='Username'
+                className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
+              />
+              {errors.username && (
+                <p className='text-red-500 text-xs mt-1'>{errors.username.message}</p>
+              )}
+            </div>
+
+            <div className='mb-4'>
+              <label htmlFor='email' className='sr-only'>Email address</label>
+              <input
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address'
+                  }
+                })}
+                id='email'
+                type='email'
+                placeholder='Email address'
+                className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
+              />
+              {errors.email && (
+                <p className='text-red-500 text-xs mt-1'>{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className='relative mb-4'>
+              <label htmlFor='password' className='sr-only'>Password</label>
+              <input
+                {...register('password', {
+                  required: 'Password is required',
+                  minLength: {
+                    value: 6,
+                    message: 'Password must be at least 6 characters'
+                  }
+                })}
+                id='password'
+                type={showPassword ? 'text' : 'password'}
+                placeholder='Password'
+                className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
+              />
+              <button
+                type='button'
+                onClick={togglePasswordVisibility}
+                className='absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5'
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+              {errors.password && (
+                <p className='text-red-500 text-xs mt-1'>{errors.password.message}</p>
+              )}
+            </div>
+
+            <div className='mb-4'>
+              <label htmlFor='role' className='sr-only'>User Role</label>
+              <select
+                {...register('role', { required: 'Role is required' })}
+                id='role'
+                className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
+              >
+                <option value=''>Select Role</option>
+                {USER_ROLES.map(role => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+              {errors.role && (
+                <p className='text-red-500 text-xs mt-1'>{errors.role.message}</p>
+              )}
+            </div>
           </div>
 
-          <div className='mb-4'> 
-            <label htmlFor='role' className="block text-gray-500 text-sm font-bold mb-2">Role</label>
-            <select 
-              {...register("role", { required: true })}
-              id="role" 
-              className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+          <div>
+            <button
+              type='submit'
+              disabled={isSubmitting}
+              className='group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 disabled:opacity-50'
             >
-              <option value="">Select Role</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-            {errors.role && <p className="text-red-500 text-sm mt-1">Role is required</p>}
-          </div>
-
-          {message && <p className="text-green-600 text-center mt-4">{message}</p>}
-
-          <div className='flex justify-center'>
-            <button 
-              type="submit"
-              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6 w-full'>
-              Register
+              {isSubmitting ? 'Registering...' : 'Register'}
             </button>
           </div>
         </form>
 
-        <p className='text-center font-medium text-gray-500 mt-4'>
-          Already have an account? <Link to='/login' className='text-blue-600 hover:underline'>Login Here</Link>
-        </p>
+        <div className='mt-6 text-center'>
+          <p className='text-sm text-gray-600'>
+            Already have an account?{' '}
+            <Link to='/login' className='font-medium text-indigo-600 hover:text-indigo-500'>
+              Login here
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

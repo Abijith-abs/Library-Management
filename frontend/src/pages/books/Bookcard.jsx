@@ -4,27 +4,29 @@ import { getImgUrl } from '../../utils/getImgUrl';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const BookCard = ({ book }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
   const handleBorrowBook = async () => {
-    console.log('Current User:', currentUser);
     if (!currentUser) {
       navigate('/login');
       return;
     }
 
     const token = localStorage.getItem('token');
-    console.log('Retrieved Token:', token);
     if (!token) {
-      alert('Authentication token is missing. Please log in again.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Authentication Error',
+        text: 'Authentication token is missing. Please log in again.',
+        confirmButtonColor: '#d33',
+      });
       navigate('/login');
       return;
     }
-    
-    console.log('Attempting to borrow book with token:', token);
 
     try {
       const response = await axios.post('http://localhost:3000/api/transactions/borrow', 
@@ -35,69 +37,101 @@ const BookCard = ({ book }) => {
           }
         }
       );
-      
-      console.log('Borrow book response:', response.data);
-      
-      if (response.data.success) {
-        alert('Book borrowed successfully!');
-        navigate('/borrowed-books');
+
+      if (response.data.success || response.status === 201 || response.data.borrowedTransactions) {
+        if (response.data.message?.includes('limit')) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Borrowing Limit Reached',
+            text: response.data.message,
+            confirmButtonColor: '#f59e0b',
+          });
+        } else {
+          Swal.fire({
+            icon: 'success',
+            title: 'Book Borrowed!',
+            text: `${book.title} was borrowed successfully.`,
+            confirmButtonColor: '#3085d6',
+          });
+        }
       } else {
-        alert(response.data.message || 'Failed to borrow book');
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Borrow',
+          text: response.data.message || 'An error occurred.',
+          confirmButtonColor: '#d33',
+        });
       }
+
     } catch (error) {
-      console.error('Borrow book error:', error.response?.data || error.message);
-      
-      // Handle specific unauthorized error
       if (error.response?.status === 401) {
-        alert('Your session has expired. Please log in again.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Session Expired',
+          text: 'Please log in again.',
+          confirmButtonColor: '#d33',
+        });
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/login');
         return;
       }
-      
-      alert(error.response?.data?.message || 'Failed to borrow book. Please try again.');
+
+      if (error.response?.data?.message?.includes('Exceeds maximum book borrowing limit')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Borrowing Limit Reached',
+          text: 'You can borrow up to 3 books only.',
+          confirmButtonColor: '#d33',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.response?.data?.message || 'Something went wrong.',
+          confirmButtonColor: '#d33',
+        });
+      }
     }
-  }
+  };
 
   return (
-    <div className=" rounded-lg transition-shadow duration-300">
-      <div
-        className="flex flex-col sm:flex-row sm:items-center sm:h-72  sm:justify-center gap-4"
-      >
-        <div className="sm:h-72 sm:flex-shrink-0 border rounded-md">
+    <div className='bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg group'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:h-72 sm:justify-center gap-6 p-4'>
+        <div className='sm:w-1/3 sm:flex-shrink-0 border-2 border-gray-100 rounded-xl overflow-hidden'>
           <Link to={`/books/${book._id}`}>
-
             <img
               src={getImgUrl(book.coverImage)}
-              alt="Book Cover"
-              className="w-full bg-cover p-2 rounded-md cursor-pointer hover:scale-105 transition-all duration-200"
+              alt={`Cover of ${book.title}`}
+              className='w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300'
             />
           </Link>
         </div>
 
-        <div>
+        <div className='sm:w-2/3 space-y-4'>
           <Link to={`/books/${book._id}`}>
-
-            <h3 className="text-xl font-semibold hover:text-blue-600 mb-3">
+            <h3 className='text-2xl font-bold text-indigo-900 group-hover:text-indigo-700 transition-colors'>
               {book?.title}
             </h3>
           </Link>
 
-          <p className="text-gray-600 mb-5">
-            {book?.description.length > 70 ? book.description.slice(0, 80) + '...' : book?.description}
+          <p className='text-gray-600 line-clamp-3'>
+            {book?.description}
           </p>
-          <p className="font-medium mb-5">
-            {book?.newPrice} <span className="line-through font-normal ml-2">{book?.oldPrice}</span>
-          </p>
-          <button
-            onClick={handleBorrowBook}
-            className="bg-yellow-400 px-12 py-2 rounded-md text-base font-bold 
-          hover:bg-[#0D0842] hover:text-white transition-all duration-200 cursor-pointer
-            space-x-1 flex items-center gap-1 ">
-            <FaBook className="" />
-            <span>Borrow Book</span>
-          </button>
+          <div className='flex items-center justify-between space-x-2'>
+            <p className='text-lg font-semibold text-green-700 truncate'>
+              {book?.newPrice} 
+              <span className='text-gray-500 text-sm line-through ml-2'>{book?.oldPrice}</span>
+            </p>
+            <button
+              onClick={handleBorrowBook}
+              className='px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 
+              transition-colors duration-300 flex items-center space-x-1 group'
+            >
+              <FaBook className='text-sm group-hover:animate-bounce' />
+              <span>Borrow</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
