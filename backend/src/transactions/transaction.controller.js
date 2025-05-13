@@ -191,8 +191,98 @@ const getUserTransactions = async (req, res) => {
     }
 };
 
+// Get a single transaction by ID
+const getTransaction = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const transaction = await Transaction.findById(id)
+            .populate('book')
+            .populate('user', '-password');
+
+        if (!transaction) {
+            return res.status(404).json({ message: 'Transaction not found' });
+        }
+
+        res.json(transaction);
+    } catch (error) {
+        console.error('Error getting transaction:', error);
+        res.status(500).json({ message: 'Error getting transaction details' });
+    }
+};
+
+// Calculate late fee for a transaction
+const calculateLateFee = async (req, res) => {
+    try {
+        const { dueDate, returnDate } = req.query;
+
+        if (!dueDate || !returnDate) {
+            return res.status(400).json({ 
+                message: 'Both dueDate and returnDate are required' 
+            });
+        }
+
+        const dueDateObj = new Date(dueDate);
+        const returnDateObj = new Date(returnDate);
+
+        // Calculate days overdue
+        const daysOverdue = Math.ceil(
+            (returnDateObj - dueDateObj) / (1000 * 60 * 60 * 24)
+        );
+
+        // If not overdue or within grace period (2 days), no fee
+        if (daysOverdue <= 2) {
+            return res.status(200).json({
+                daysOverdue: Math.max(0, daysOverdue),
+                lateFee: 0,
+                dueDate: dueDateObj,
+                returnDate: returnDateObj
+            });
+        }
+
+        // Subtract grace period from days overdue
+        const effectiveDaysOverdue = daysOverdue - 2;
+
+        let lateFee = 0;
+        
+        // First week: $2/day
+        if (effectiveDaysOverdue <= 7) {
+            lateFee = effectiveDaysOverdue * 2;
+        } else {
+            // First week fee
+            lateFee = 7 * 2;
+            
+            // Second week: $3/day
+            const secondWeekDays = Math.min(7, effectiveDaysOverdue - 7);
+            lateFee += secondWeekDays * 3;
+            
+            // After two weeks: $5/day
+            if (effectiveDaysOverdue > 14) {
+                lateFee += (effectiveDaysOverdue - 14) * 5;
+            }
+        }
+
+        // Cap at maximum fee of $100
+        lateFee = Math.min(lateFee, 100);
+
+        return res.status(200).json({
+            daysOverdue: Math.max(0, daysOverdue),
+            lateFee,
+            dueDate: dueDateObj,
+            returnDate: returnDateObj
+        });
+    } catch (error) {
+        console.error('Error calculating late fee:', error);
+        res.status(500).json({ 
+            message: 'Error calculating late fee', 
+            error: error.message 
+        });
+    }
+};
+
 module.exports = {
     borrowBooks,
     returnBooks,
-    getUserTransactions
+    getUserTransactions,
+    getTransaction,
+    calculateLateFee
 };

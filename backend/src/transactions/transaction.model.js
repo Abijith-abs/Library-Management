@@ -56,13 +56,44 @@ transactionSchema.pre('save', function(next) {
     next();
 });
 
-// Static method to calculate late fees
-transactionSchema.statics.calculateLateFee = function(dueDate, returnDate, feePerDay = 2) {
-    if (returnDate > dueDate) {
-        const lateDays = Math.ceil((returnDate - dueDate) / (1000 * 60 * 60 * 24));
-        return lateDays * feePerDay;
+const FEE_STRUCTURE = {
+    gracePeriod: 2,          // 2 days grace period
+    progressiveFees: [
+        { days: 7,  feePerDay: 2 },   // $2/day for first week
+        { days: 14, feePerDay: 3 },   // $3/day for second week
+        { days: Infinity, feePerDay: 5 }  // $5/day after two weeks
+    ],
+    maxTotalFee: 100         // Maximum total fee cap
+};
+
+// Enhanced static method to calculate late fees
+transactionSchema.statics.calculateLateFee = function(dueDate, returnDate) {
+    if (!returnDate || returnDate <= dueDate) return 0;
+
+    // Add grace period to due date
+    const effectiveDueDate = new Date(dueDate);
+    effectiveDueDate.setDate(effectiveDueDate.getDate() + FEE_STRUCTURE.gracePeriod);
+    
+    if (returnDate <= effectiveDueDate) return 0;
+
+    let totalFee = 0;
+    let lateDays = Math.ceil((returnDate - effectiveDueDate) / (1000 * 60 * 60 * 24));
+    let remainingDays = lateDays;
+    let currentFeeIndex = 0;
+
+    while (remainingDays > 0 && totalFee < FEE_STRUCTURE.maxTotalFee) {
+        const currentLevel = FEE_STRUCTURE.progressiveFees[currentFeeIndex];
+        const daysAtCurrentRate = currentFeeIndex < FEE_STRUCTURE.progressiveFees.length - 1
+            ? Math.min(remainingDays, currentLevel.days)
+            : remainingDays;
+
+        const feeForPeriod = daysAtCurrentRate * currentLevel.feePerDay;
+        totalFee += feeForPeriod;
+        remainingDays -= daysAtCurrentRate;
+        currentFeeIndex++;
     }
-    return 0;
+
+    return Math.min(totalFee, FEE_STRUCTURE.maxTotalFee);
 };
 
 const Transaction = mongoose.model("Transaction", transactionSchema);

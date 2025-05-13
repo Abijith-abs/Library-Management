@@ -17,6 +17,8 @@ import AddBook from "../pages/Dashboard/addBook/AddBook";
 import UpdateBook from "../pages/Dashboard/editBook/UpdateBook";
 import UserDashboard from "../pages/Dashboard/users/UserDashboard";
 import UserDetails from "../pages/Dashboard/UserDetails";
+import ReturnBook from "../pages/Dashboard/returnBook/ReturnBook";
+import LoginPage from "../components/LoginPage";
 
 const router = createBrowserRouter([
   // User routes with navbar
@@ -37,12 +39,16 @@ const router = createBrowserRouter([
         element: <PrivateRoute><BorrowedBooksPage /></PrivateRoute>
       },
       {
+        path: "/return-book/:transactionId",
+        element: <PrivateRoute><ReturnBook /></PrivateRoute>
+      },
+      {
         path: "/about",
         element: <div>About</div>
       },
       {
         path: "/login",
-        element: <Login />
+        element: <LoginPage />
       },
       {
         path: "/register",
