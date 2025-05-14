@@ -1,12 +1,9 @@
 import React from 'react';
 import { Card, Typography, Tooltip, IconButton } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
+import { formatDate } from '../../utils/dateFormatter';
 
 const LateFeeInfo = ({ lateFee, dueDate, returnDate }) => {
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString();
-    };
-
     const getFeeDescription = () => {
         if (!lateFee) return 'No late fee charged';
         

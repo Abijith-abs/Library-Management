@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { formatDate } from '../../../utils/dateFormatter';
 import { useAuth } from '../../../context/AuthContext';
 import AuthProvider from '../../../context/AuthContext';
 import axios from 'axios';
@@ -107,8 +108,8 @@ const UserDashboard = () => {
                             {transactions.map((transaction) => (
                                 <li key={transaction._id} className="bg-gray-50 p-4 rounded-lg shadow-sm space-y-2">
                                     <p className="font-medium text-gray-800">Book: {transaction.book.title}</p>
-                                    <p className="text-gray-600">Borrowed on: {new Date(transaction.borrowDate).toLocaleDateString()}</p>
-                                    <p className="text-gray-600">Due Date: {new Date(transaction.dueDate).toLocaleDateString()}</p>
+                                    <p className="text-gray-600">Borrowed on: {formatDate(transaction.borrowDate)}</p>
+                                    <p className="text-gray-600">Due Date: {formatDate(transaction.dueDate)}</p>
                                     <p className="font-semibold">Status: {transaction.isReturned ? 'Returned' : 'Active'}</p>
                                 </li>
                             ))}

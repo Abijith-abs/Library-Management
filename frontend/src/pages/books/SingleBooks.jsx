@@ -1,5 +1,5 @@
-
-import React from 'react'
+import React from 'react';
+import { formatDate } from '../../utils/dateFormatter';
 import { useParams, useNavigate } from "react-router-dom"
 
 import { getImgUrl } from '../../utils/getImgUrl';
@@ -83,7 +83,7 @@ const SingleBook = () => {
                 <div className='mb-5'>
                     <p className="text-gray-700 mb-2"><strong>Author:</strong> {book.author || 'admin'}</p>
                     <p className="text-gray-700 mb-4">
-                        <strong>Published:</strong> {new Date(book?.createdAt).toLocaleDateString()}
+                        <strong>Published:</strong> {formatDate(book?.createdAt)}
                     </p>
                     <p className="text-gray-700 mb-4 capitalize">
                         <strong>Category:</strong> {book?.category}

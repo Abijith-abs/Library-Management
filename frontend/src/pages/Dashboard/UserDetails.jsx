@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate } from '../../utils/dateFormatter';
 import axios from 'axios';
 import getBaseUrl from '../../utils/baseUrl';
 import { IoPersonOutline, IoBookOutline } from 'react-icons/io5';
@@ -125,7 +126,7 @@ const UserDetails = () => {
                       <li key={book._id} className="flex justify-between text-sm text-gray-700">
                         <span>{book.title}</span>
                         <span className="text-xs text-gray-500">
-                          Due: {new Date(book.dueDate).toLocaleDateString()}
+                          Due: {formatDate(book.dueDate)}
                         </span>
                       </li>
                     ))}

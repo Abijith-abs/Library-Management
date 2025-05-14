@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { formatDate } from '../../utils/dateFormatter';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBorrowedBooks } from '../../redux/features/borrow/borrowSlice';
 import { useNavigate } from 'react-router-dom';
@@ -90,10 +91,10 @@ const BorrowedBooksPage = () => {
                   <Box>
                     <Typography variant="h6">{transaction.book.title}</Typography>
                     <Typography color="textSecondary">
-                      Borrowed: {new Date(transaction.borrowDate).toLocaleDateString()}
+                      Borrowed: {formatDate(transaction.borrowDate)}
                     </Typography>
                     <Typography color="error">
-                      Due: {new Date(transaction.dueDate).toLocaleDateString()}
+                      Due: {formatDate(transaction.dueDate)}
                     </Typography>
                   </Box>
                   <Button
@@ -127,10 +128,10 @@ const BorrowedBooksPage = () => {
                   <Box>
                     <Typography variant="h6">{transaction.book.title}</Typography>
                     <Typography color="textSecondary">
-                      Borrowed: {new Date(transaction.borrowDate).toLocaleDateString()}
+                      Borrowed: {formatDate(transaction.borrowDate)}
                     </Typography>
                     <Typography color="success.main">
-                      Returned: {new Date(transaction.returnDate).toLocaleDateString()}
+                      Returned: {formatDate(transaction.returnDate)}
                     </Typography>
                   </Box>
                 </Box>

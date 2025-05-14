@@ -21,6 +21,7 @@ import {
   useReturnBookMutation
 } from '../../../redux/features/transactions/transactionsApi';
 import LateFeeInfo from '../../../components/LateFeeInfo/LateFeeInfo';
+import { formatDate } from '../../../utils/dateFormatter';
 
 const ReturnBook = () => {
   const { transactionId } = useParams();
@@ -100,10 +101,10 @@ const ReturnBook = () => {
               Book: {transaction.book?.title}
             </Typography>
             <Typography color="text.secondary" gutterBottom>
-              Borrowed on: {new Date(transaction.borrowDate).toLocaleDateString()}
+              Borrowed on: {formatDate(transaction.borrowDate)}
             </Typography>
             <Typography color="text.secondary" gutterBottom>
-              Due on: {new Date(transaction.dueDate).toLocaleDateString()}
+              Due on: {formatDate(transaction.dueDate)}
             </Typography>
           </Box>
         )}
